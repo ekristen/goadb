@@ -63,10 +63,6 @@ func newServer(config ServerConfig) (server, error) {
 		config.Dialer = tcpDialer{}
 	}
 
-	if config.NoStart == nil {
-		config.NoStart = false
-	}
-
 	if config.Host == "" {
 		config.Host = "localhost"
 	}
