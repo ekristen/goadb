@@ -74,15 +74,18 @@ func newServer(config ServerConfig) (server, error) {
 		config.fs = localFilesystem
 	}
 
-	if config.PathToAdb == "" {
+	if config.NoStart == false && config.PathToAdb == "" {
 		path, err := config.fs.LookPath(AdbExecutableName)
 		if err != nil {
 			return nil, errors.WrapErrorf(err, errors.ServerNotAvailable, "could not find %s in PATH", AdbExecutableName)
 		}
 		config.PathToAdb = path
 	}
-	if err := config.fs.IsExecutableFile(config.PathToAdb); err != nil {
-		return nil, errors.WrapErrorf(err, errors.ServerNotAvailable, "invalid adb executable: %s", config.PathToAdb)
+
+	if config.NoStart == false {
+		if err := config.fs.IsExecutableFile(config.PathToAdb); err != nil {
+			return nil, errors.WrapErrorf(err, errors.ServerNotAvailable, "invalid adb executable: %s", config.PathToAdb)
+		}
 	}
 
 	return &realServer{
