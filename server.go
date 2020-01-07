@@ -27,6 +27,8 @@ type ServerConfig struct {
 	Host string
 	Port int
 
+	NoStart bool
+	
 	// Dialer used to connect to the adb server.
 	Dialer
 
@@ -59,6 +61,10 @@ type realServer struct {
 func newServer(config ServerConfig) (server, error) {
 	if config.Dialer == nil {
 		config.Dialer = tcpDialer{}
+	}
+
+	if config.NoStart == nil {
+		config.NoStart = false
 	}
 
 	if config.Host == "" {
@@ -95,8 +101,10 @@ func (s *realServer) Dial() (*wire.Conn, error) {
 	conn, err := s.config.Dial(s.address)
 	if err != nil {
 		// Attempt to start the server and try again.
-		if err = s.Start(); err != nil {
-			return nil, errors.WrapErrorf(err, errors.ServerNotAvailable, "error starting server for dial")
+		if s.config.NoStart == false {
+			if err = s.Start(); err != nil {
+				return nil, errors.WrapErrorf(err, errors.ServerNotAvailable, "error starting server for dial")
+			}
 		}
 
 		conn, err = s.config.Dial(s.address)
@@ -109,6 +117,9 @@ func (s *realServer) Dial() (*wire.Conn, error) {
 
 // StartServer ensures there is a server running.
 func (s *realServer) Start() error {
+	if s.config.NoStart == true {
+		return nil
+	}
 	output, err := s.config.fs.CmdCombinedOutput(s.config.PathToAdb, "-L", fmt.Sprintf("tcp:%s", s.address), "start-server")
 	outputStr := strings.TrimSpace(string(output))
 	return errors.WrapErrorf(err, errors.ServerNotAvailable, "error starting server: %s\noutput:\n%s", err, outputStr)
